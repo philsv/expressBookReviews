@@ -10,8 +10,22 @@ app.use(express.json());
 
 app.use("/customer",session({secret:"fingerprint_customer",resave: true, saveUninitialized: true}))
 
-app.use("/customer/auth/*", function auth(req,res,next){
-//Write the authenication mechanism here
+app.use("/customer/auth/*", function auth(req, res, next) {
+    const sessionToken = req.session.token;
+    const bearerToken = req.header('Authorization');
+    
+    if (sessionToken || bearerToken) {
+        try {
+        const token = bearerToken ? bearerToken.split(' ')[1] : sessionToken;
+        const decoded = jwt.verify(token, 'your_secret_key');
+        req.userId = decoded.userId;
+        next();
+        } catch (error) {
+        res.status(401).json({ error: "Unauthorized" });
+        }
+    } else {
+        res.status(401).json({ error: "Unauthorized" });
+    }
 });
  
 const PORT =5000;
