@@ -8,26 +8,26 @@ const app = express();
 
 app.use(express.json());
 
-app.use("/customer",session({secret:"fingerprint_customer",resave: true, saveUninitialized: true}))
+app.use("/customer",session({secret:"fingerprint_customer",resave:true,saveUninitialized:false}));
 
-app.use("/customer/auth/*", function auth(req, res, next) {
-    const sessionToken = req.session.token;
-    const bearerToken = req.header('Authorization');
-    
-    if (sessionToken || bearerToken) {
-        try {
-        const token = bearerToken ? bearerToken.split(' ')[1] : sessionToken;
-        const decoded = jwt.verify(token, 'your_secret_key');
-        req.userId = decoded.userId;
-        next();
-        } catch (error) {
-        res.status(401).json({ error: "Unauthorized" });
-        }
+app.use("/customer/auth/*", function auth(req,res,next){
+    if(req.session.authorization) {
+        let token = req.session.authorization['accessToken'];
+        jwt.verify(token, "secret", (err, user) => {
+            if(!err){
+                req.user = user;
+                next();
+            }
+            else{
+                return res.status(403).json({message: "User not authenticated"})
+            }
+        });
     } else {
-        res.status(401).json({ error: "Unauthorized" });
+        console.log(req.session.authorization);
+        return res.status(403).json({message: "User not logged in"})
     }
 });
- 
+
 const PORT = 5000;
 
 app.use("/customer", customer_routes);

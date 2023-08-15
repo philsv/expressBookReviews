@@ -10,59 +10,95 @@ const isValid = (username) => {
     return users.some(user => user.username === username);
 }
 
-  const authenticatedUser = (username, password) => {
+const authenticatedUser = (username, password) => {
     const user = users.find(user => user.username === username);
-  
+
     if (!user) {
-      return false;
-}
-  
+        return false;
+    }
     return user.password === password;
-  }
+}
 
 
 regd_users.post("/login", (req, res) => {
-    const { username, password } = req.body;
-  
+    const username = req.body.username;
+    const password = req.body.password;
+
     if (!username || !password) {
-      return res.status(400).json({ error: "Username and password are required" });
-    }
-  
-    if (!isValid(username) || !authenticatedUser(username, password)) {
-      return res.status(401).json({ error: "Invalid credentials" });
+        return res.status(404).json({ message: "Error logging in" });
     }
 
-    const token = jwt.sign({ username }, 'your_secret_key', { expiresIn: '1h' });
-  
-    res.json({ message: "Login successful", token });
+    if (authenticatedUser(username, password)) {
+        let accessToken = jwt.sign({
+            data: password
+        }, 'secret', { expiresIn: '24h' });
+
+        req.session.authorization = {
+            accessToken, username
+        }
+        return res.status(200).send("User successfully logged in");
+    } else {
+        return res.status(208).json({ message: "Invalid Login. Check username and password" });
+    }
 });
 
 
 regd_users.put("/auth/review/:isbn", (req, res) => {
-    const { isbn } = req.params;
-    const { review } = req.body;
-    const token = req.header('Authorization').split(' ')[1];
-  
-    try {
-      const decoded = jwt.verify(token, 'your_secret_key');
-      const username = decoded.username;
-  
-      // Find the book by ISBN
-      const book = books[isbn];
-  
-      if (!book) {
-        return res.status(404).json({ error: "Book not found" });
-      }
-  
-      // Add the review to the book's reviews object
-      if (!book.reviews) {
-        book.reviews = {};
-      }
-      book.reviews[username] = review;
-  
-      res.json({ message: "Review added successfully", book });
-    } catch (error) {
-      res.status(401).json({ error: "Unauthorized" });
+    const review = req.query.review;
+    const isbn = req.params.isbn;
+    const session = req.session;
+    const username = session?.authorization?.username ?? null;
+    const book = Object.values(books).find(book => book.isbn === isbn);
+
+    if (book) {
+        if (book.reviews && username in book.reviews) {
+            return res.status(208).json({
+                message: "Review already exists",
+                review: book.reviews[username],
+                username: username,
+                isbn: isbn,
+                book: book,
+            });
+        } else {
+            if (!book.reviews) {
+                book.reviews = {};
+            }
+
+            book.reviews[username] = review;
+            return res.status(200).json({
+                message: "Review added successfully",
+                review: book.reviews[username]
+            });
+        }
+    } else {
+        res.status(404).json({ message: 'Book not found' });
+    }
+});
+
+
+regd_users.delete("/auth/review/:isbn", (req, res) => {
+    const isbn = req.params.isbn;
+    const session = req.session;
+    const username = session?.authorization?.username ?? null;
+    const book = Object.values(books).find(book => book.isbn === isbn);
+
+    if (book) {
+        if (username in book.reviews) {
+            delete book.reviews[username];
+            res.status(200).json({ 
+                message: "Review deleted successfully",
+                review: book.reviews[username],
+                username: username,
+                isbn: isbn,
+                book: book,
+            });
+        } else {
+            res.status(404).json({ 
+                message: "Review not found",
+            });
+        }
+    } else {
+        res.status(404).json({ message: 'Book not found' });
     }
 });
 
