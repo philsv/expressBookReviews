@@ -17,10 +17,7 @@ const isValid = (username) => {
       return false;
 }
   
-    if (user.password === password) {
-      return true;
-    }
-    return false;
+    return user.password === password;
   }
 
 
@@ -35,7 +32,7 @@ regd_users.post("/login", (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    const token = jwt.sign({ username }, 'your_secret_key');
+    const token = jwt.sign({ username }, 'your_secret_key', { expiresIn: '1h' });
   
     res.json({ message: "Login successful", token });
 });
