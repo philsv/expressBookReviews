@@ -4,6 +4,8 @@ Final assignment for the course "Developing Back-End Apps with Node.js and Expre
 
 ## Author(s)
 
-Lavanya T S
-Sapthashree K S
-K Sundararajan
+Lavanya T. S.
+
+Sapthashree K. S.
+
+K. Sundararajan
