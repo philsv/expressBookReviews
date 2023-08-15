@@ -21,8 +21,7 @@ const authenticatedUser = (username, password) => {
 
 
 regd_users.post("/login", (req, res) => {
-    const username = req.body.username;
-    const password = req.body.password;
+    const {username, password} = req.body;
 
     if (!username || !password) {
         return res.status(404).json({ message: "Error logging in" });
@@ -44,9 +43,9 @@ regd_users.post("/login", (req, res) => {
 
 
 regd_users.put("/auth/review/:isbn", (req, res) => {
-    const review = req.query.review;
-    const isbn = req.params.isbn;
-    const session = req.session;
+    const {review} = req.query;
+    const {isbn} = req.params;
+    const {session} = req;
     const username = session?.authorization?.username ?? null;
     const book = Object.values(books).find(book => book.isbn === isbn);
 
@@ -56,7 +55,6 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
                 message: "Review already exists",
                 review: book.reviews[username],
                 username: username,
-                isbn: isbn,
                 book: book,
             });
         } else {
@@ -77,8 +75,8 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
 
 
 regd_users.delete("/auth/review/:isbn", (req, res) => {
-    const isbn = req.params.isbn;
-    const session = req.session;
+    const {isbn} = req.params;
+    const {session} = req;
     const username = session?.authorization?.username ?? null;
     const book = Object.values(books).find(book => book.isbn === isbn);
 
@@ -89,7 +87,6 @@ regd_users.delete("/auth/review/:isbn", (req, res) => {
                 message: "Review deleted successfully",
                 review: book.reviews[username],
                 username: username,
-                isbn: isbn,
                 book: book,
             });
         } else {
